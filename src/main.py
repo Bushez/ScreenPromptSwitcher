@@ -158,6 +158,9 @@ class ScreenPromptWindow:
     PLACEHOLDER_TEXT = "Enter your prompt here..."
     PLACEHOLDER_COLOR = "#888888"
 
+    # Files location
+    PATH = f"D:/files"
+
     def __init__(self):
         self.config = load_config()
         self.drag_data = {"x": 0, "y": 0}
@@ -213,6 +216,8 @@ class ScreenPromptWindow:
         # Check for updates (async, non-blocking)
         if self.config.get("auto_check_updates", True):
             self._check_for_updates()
+
+        self.cur_file = 0
 
     def _check_for_updates(self):
         """Check for updates asynchronously."""
@@ -824,6 +829,7 @@ class ScreenPromptWindow:
         safe_add_hotkey("ctrl+shift+r", self._hotkey_reset_geometry, "reset geometry")
         safe_add_hotkey("ctrl+shift+q", self._hotkey_quit, "quit")
         safe_add_hotkey("ctrl+shift+f1", self._hotkey_panic, "PANIC - instant close")
+        safe_add_hotkey("ctrl+alt+e", self._change_file, "Switch to next file")
 
         # Text shortcuts
         safe_add_hotkey("ctrl+shift+c", self._hotkey_copy_all, "copy all")
@@ -1054,6 +1060,24 @@ class ScreenPromptWindow:
         def clear():
             self._show_placeholder()  # Clear and show placeholder
         self._run_in_main_thread(clear)
+
+    def _change_file(self) -> None:
+        self.cur_file += 1
+        files_count = sum(1 for item in os.listdir(self.PATH))
+        if self.cur_file > files_count:
+            self.cur_file = 1
+
+        file_path = f"{self.PATH}/{self.cur_file}.txt"
+
+        with open(file_path, "r") as f:
+            text = f.read()
+        try:
+            self._hide_placeholder()
+            self.text_widget.delete("1.0", tk.END)
+            self.text_widget.insert("1.0", text)
+        except tk.TclError:
+            pass
+
 
     def on_settings_save(self):
         """Handle settings save - reload config and show text."""
